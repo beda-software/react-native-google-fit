@@ -115,7 +115,7 @@ declare module 'react-native-google-fit' {
 
     getBloodPressureSamples: (
       options: StartAndEndDate & Partial<BucketOptions>,
-      callback: (isError: boolean, result: DateValueResponse[]) => void
+      callback: (isError: boolean, result: BloodPressureSampleResponse[]) => void
     ) => void
 
     saveWeight: (
@@ -161,7 +161,7 @@ declare module 'react-native-google-fit' {
      */
     getSleepData: (
       options: Partial<StartAndEndDate>,
-      callback?: (isError: boolean, result: any) => void
+      callback?: (isError: boolean, result: DateValueResponse[]) => void
     ) => Promise<any> | void
 
 
@@ -271,6 +271,14 @@ declare module 'react-native-google-fit' {
     day: Day
   }
 
+  export type BloodPressureSampleResponse = {
+    value: number,
+    value2: number,
+    endDate:string,
+    startDate:string,
+    day: Day
+  }
+
   export type ActivitySampleResponse = {
     sourceName: string,
     device: string,
@@ -278,7 +286,7 @@ declare module 'react-native-google-fit' {
     tracked: boolean,
     activityName: string,
     end: number,
-    start: number 
+    start: number
     calories?: number,
     quantity?: number,
     distance?: number
@@ -288,7 +296,7 @@ declare module 'react-native-google-fit' {
     nutrients: {
       sugar: number,
       iron: number,
-      sodium: number, 
+      sodium: number,
       calories: number,
       "fat.polyunsaturated": number,
       "carbs.total": number,
