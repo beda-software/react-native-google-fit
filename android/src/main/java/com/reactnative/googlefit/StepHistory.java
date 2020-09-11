@@ -155,16 +155,6 @@ public class StepHistory {
                 .build()
         );
 
-        // Mi Fit
-        dataSources.add(
-            new DataSource.Builder()
-                .setAppPackageName("com.xiaomi.hm.health")
-                .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
-                .setType(DataSource.TYPE_RAW)
-                .setStreamName("")
-                .build()
-        );
-
         /*
         DataSourcesRequest sourceRequest = new DataSourcesRequest.Builder()
                 .setDataTypes(DataType.TYPE_STEP_COUNT_DELTA,
