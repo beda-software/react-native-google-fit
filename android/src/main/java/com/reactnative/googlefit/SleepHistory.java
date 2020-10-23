@@ -24,16 +24,11 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.common.Scopes;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptionsExtension;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.fitness.Fitness;
-import com.google.android.gms.fitness.FitnessActivities;
 import com.google.android.gms.fitness.FitnessOptions;
-import com.google.android.gms.fitness.data.Bucket;
-import com.google.android.gms.fitness.data.DataPoint;
-import com.google.android.gms.fitness.data.DataSet;
 import com.google.android.gms.fitness.data.DataType;
-import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.fitness.data.Session;
 import com.google.android.gms.fitness.request.SessionReadRequest;
 import com.google.android.gms.fitness.result.SessionReadResponse;
@@ -42,6 +37,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.TimeZone;
@@ -55,8 +51,6 @@ public class SleepHistory {
     private GoogleFitManager googleFitManager;
 
     private static final String TAG = "RNGoogleFit-Sleep";
-    private static final String sleepPermissionsError = "4: The user must be signed in to make this API call.";
-    private static final int sleepErrorCode = 4;
     public SleepHistory(ReactContext reactContext, GoogleFitManager googleFitManager){
         this.mReactContext = reactContext;
         this.googleFitManager = googleFitManager;
@@ -64,37 +58,34 @@ public class SleepHistory {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void getSleepData(double startDate, double endDate, final Callback errorCallback, final Callback successCallback) {
+
         SessionReadRequest request = new SessionReadRequest.Builder()
                 .readSessionsFromAllApps()
-                .read(DataType.TYPE_ACTIVITY_SEGMENT)
-                .setTimeInterval((long) startDate, (long) endDate, TimeUnit.MILLISECONDS)
+                .includeSleepSessions()
+                .read(DataType.TYPE_SLEEP_SEGMENT)
+                .setTimeInterval((long)startDate, (long)endDate, TimeUnit.MILLISECONDS)
                 .build();
 
-        final GoogleSignInAccount gsa = GoogleSignIn.getAccountForScopes(this.mReactContext, new Scope(Scopes.FITNESS_ACTIVITY_READ));
+        GoogleSignInOptionsExtension fitnessOptions =
+                FitnessOptions.builder()
+                        .addDataType(DataType.TYPE_SLEEP_SEGMENT, FitnessOptions.ACCESS_READ)
+                        .build();
+
+        GoogleSignInAccount gsa =
+                GoogleSignIn.getAccountForExtension(this.mReactContext, fitnessOptions);
+
         Fitness.getSessionsClient(this.mReactContext, gsa)
                 .readSession(request)
                 .addOnSuccessListener(new OnSuccessListener<SessionReadResponse>() {
                     @Override
                     public void onSuccess(SessionReadResponse response) {
-                        List<Object> sleepSessions = response.getSessions()
-                            .stream()
-                            .filter(new Predicate<Session>() {
-                                @Override
-                                public boolean test(Session s) {
-                                    Log.i(TAG, "Activity found: " + s.getActivity());
-                                    return s.getActivity().equals(FitnessActivities.SLEEP);
-                                }
-                            })
-                            .collect(Collectors.toList());
+                        List<Session> sleepSessions = response.getSessions();
 
                         WritableArray sleep = Arguments.createArray();
 
-                        for (Object session : sleepSessions) {
-                            List<DataSet> dataSets = response.getDataSet((Session) session);
+                        for (Session session : sleepSessions) {
 
-                            for (DataSet dataSet : dataSets) {
-                                processDataSet(dataSet, (Session) session, sleep);
-                            }
+                            processSession(session, sleep);
                         }
 
                         successCallback.invoke(sleep);
@@ -104,34 +95,19 @@ public class SleepHistory {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Log.i(TAG, "Failure: " + e.getMessage());
-                        if (sleepPermissionsError.equals(e.getMessage())) {
-                            requestSleepPermissions(gsa);
-                            errorCallback.invoke(sleepPermissionsError);
-                        } else {
-                            errorCallback.invoke(e.getMessage());
-                        }
+                        errorCallback.invoke(e.getMessage());
                     }
                 });
     }
 
-    void requestSleepPermissions(GoogleSignInAccount account) {
-        FitnessOptions fitnessOptions = FitnessOptions.builder()
-                .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_READ)
-                .build();
-        GoogleSignIn.requestPermissions(this.mReactContext.getCurrentActivity(), sleepErrorCode, account, fitnessOptions);
-    }
-
-    private void processDataSet(DataSet dataSet, Session session, WritableArray map) {
+    private void processSession(Session session, WritableArray map) {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         dateFormat.setTimeZone(TimeZone.getDefault());
 
-        for (DataPoint dp : dataSet.getDataPoints()) {
-            WritableMap sleepMap = Arguments.createMap();
-            sleepMap.putString("value", dp.getValue(Field.FIELD_ACTIVITY).asActivity());
-            sleepMap.putString("startDate", dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
-            sleepMap.putString("endDate", dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
-            map.pushMap(sleepMap);
-        }
+        WritableMap sleepMap = Arguments.createMap();
+        sleepMap.putString("startDate", dateFormat.format(session.getStartTime(TimeUnit.MILLISECONDS)));
+        sleepMap.putString("endDate", dateFormat.format(session.getEndTime(TimeUnit.MILLISECONDS)));
+        map.pushMap(sleepMap);
     }
 
 }

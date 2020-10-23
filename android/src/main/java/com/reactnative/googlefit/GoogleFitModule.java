@@ -134,12 +134,13 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
     @ReactMethod
     public void getDailyStepCountSamples(double startDate,
                                          double endDate,
-                                         ReadableMap configs,
+                                         int bucketInterval,
+                                         String bucketUnit,
                                          Callback errorCallback,
                                          Callback successCallback) {
 
         try {
-            mGoogleFitManager.getStepHistory().aggregateDataByDate((long) startDate, (long) endDate, configs, successCallback);
+            mGoogleFitManager.getStepHistory().aggregateDataByDate((long) startDate, (long) endDate, bucketInterval, bucketUnit, successCallback);
         } catch (IllegalViewOperationException e) {
             errorCallback.invoke(e.getMessage());
         }
@@ -187,6 +188,18 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
     }
 
     @ReactMethod
+    public void getLatestWeight(Callback errorCallback,
+                                Callback successCallback) {
+        try {
+            BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
+            bodyHistory.setDataType(DataType.TYPE_WEIGHT);
+            successCallback.invoke(bodyHistory.getMostRecent());
+        } catch (IllegalViewOperationException e) {
+            errorCallback.invoke(e.getMessage());
+        }
+    }
+
+    @ReactMethod
     public void getWeightSamples(double startDate,
                                  double endDate,
                                  Callback errorCallback,
@@ -196,6 +209,18 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
             bodyHistory.setDataType(DataType.TYPE_WEIGHT);
             successCallback.invoke(bodyHistory.getHistory((long)startDate, (long)endDate));
+        } catch (IllegalViewOperationException e) {
+            errorCallback.invoke(e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void getLatestHeight(Callback errorCallback,
+                                Callback successCallback) {
+        try {
+            BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
+            bodyHistory.setDataType(DataType.TYPE_HEIGHT);
+            successCallback.invoke(bodyHistory.getMostRecent());
         } catch (IllegalViewOperationException e) {
             errorCallback.invoke(e.getMessage());
         }
@@ -427,6 +452,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
         try {
            mGoogleFitManager.getSleepHistory().getSleepData((long)startDate, (long)endDate, errorCallback, successCallback);
         } catch (Error e) {
+            Log.i(REACT_MODULE, e.toString());
+
             errorCallback.invoke(e.getMessage());
         }
     }

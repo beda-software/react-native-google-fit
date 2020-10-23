@@ -31,9 +31,12 @@ import com.google.android.gms.fitness.result.DataReadResult;
 import java.text.DateFormat;
 import java.text.Format;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nullable;
 
 
 public class BodyHistory {
@@ -99,17 +102,41 @@ public class BodyHistory {
             for (Bucket bucket : dataReadResult.getBuckets()) {
                 List<DataSet> dataSets = bucket.getDataSets();
                 for (DataSet dataSet : dataSets) {
-                    processDataSet(dataSet, map);
+                    processDataSet(dataSet, map, true);
                 }
             }
         }
         //Used for non-aggregated data
         else if (dataReadResult.getDataSets().size() > 0) {
             for (DataSet dataSet : dataReadResult.getDataSets()) {
-                processDataSet(dataSet, map);
+                processDataSet(dataSet, map, false);
             }
         }
         return map;
+    }
+
+    @Nullable
+    public WritableMap getMostRecent() {
+        Calendar cal = java.util.Calendar.getInstance();
+
+        DataReadRequest dataReadRequest = new DataReadRequest.Builder()
+                .read(this.dataType)
+                .setTimeRange(1, cal.getTimeInMillis(), TimeUnit.MILLISECONDS)
+                .setLimit(1)
+                .build();
+
+        DataReadResult dataReadResult = Fitness.HistoryApi.readData(googleFitManager.getGoogleApiClient(), dataReadRequest).await(1, TimeUnit.MINUTES);
+
+        WritableArray map = Arguments.createArray();
+        if (dataReadResult.getDataSets().size() > 0) {
+            for (DataSet dataSet : dataReadResult.getDataSets()) {
+                processDataSet(dataSet, map, false);
+            }
+        }
+        WritableMap result = Arguments.createMap();
+        result.merge(map.getMap(0));
+
+        return result;
     }
 
     public boolean save(ReadableMap sample) {
@@ -197,7 +224,7 @@ public class BodyHistory {
         return dataSet;
     }
 
-    private void processDataSet(DataSet dataSet, WritableArray map) {
+    private void processDataSet(DataSet dataSet, WritableArray map, boolean aggregated) {
         //Log.i(TAG, "Data returned for Data type: " + dataSet.getDataType().getName());
         Format formatter = new SimpleDateFormat("EEE");
 
@@ -220,12 +247,11 @@ public class BodyHistory {
             // most recent sample is not an option), so use average value to maximise the match between values
             // returned here and values as reported by Google Fit app
             if (this.dataType == DataType.TYPE_WEIGHT) {
-                bodyMap.putDouble("value", dp.getValue(Field.FIELD_AVERAGE).asFloat());
+                bodyMap.putDouble("value", dp.getValue(aggregated ? Field.FIELD_AVERAGE : Field.FIELD_WEIGHT).asFloat());
             } else {
                 bodyMap.putDouble("value", dp.getValue(Field.FIELD_HEIGHT).asFloat());
             }
         }
         map.pushMap(bodyMap);
     }
-
 }
