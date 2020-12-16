@@ -299,6 +299,34 @@ class RNGoogleFit {
     )
   }
 
+  getWorkoutSamples(options, callback) {
+    const startDate = !isNil(options.startDate)
+      ? Date.parse(options.startDate)
+      : new Date().setHours(0, 0, 0, 0)
+    const endDate = !isNil(options.endDate)
+      ? Date.parse(options.endDate)
+      : new Date().valueOf();
+    const bucketInterval = options.bucketInterval || 1;
+    const bucketUnit = options.bucketUnit || "DAY";
+
+    googleFit.getWorkoutSamples(
+      startDate,
+      endDate,
+      bucketInterval,
+      bucketUnit,
+      msg => {
+        callback(msg, false)
+      },
+      res => {
+        if (res.length > 0) {
+          callback(false, prepareResponse(res))
+        } else {
+          callback('There is no any workout data for this period', false)
+        }
+      }
+    )
+  }
+
   getDailyNutritionSamples(options, callback) {
     const startDate = Date.parse(options.startDate)
     const endDate = Date.parse(options.endDate)

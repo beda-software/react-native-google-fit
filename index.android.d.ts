@@ -68,6 +68,16 @@ declare module 'react-native-google-fit' {
       callback: (isError: boolean, result: CalorieReponse[]) => void
     ): void
 
+    /**
+     * Get workouts.
+     * @param {Object} options getDailyWorkoutSamples accepts an options object containing required startDate: ISO8601Timestamp and endDate: ISO8601Timestamp.
+     * @callback {Function} callback The function will be called with an array of elements.
+     */
+    getWorkoutSamples(
+      options: Partial<StartAndEndDate>,
+      callback?: (isError: boolean, result: WorkoutDateResponse[]) => void
+    ): Promise<any> | void
+
     getDailyNutritionSamples(
       options: StartAndEndDate & Partial<BucketOptions>,
       callback: (isError: boolean, result: NutrientResponse[]) => void
@@ -289,6 +299,13 @@ declare module 'react-native-google-fit' {
     calories?: number,
     quantity?: number,
     distance?: number
+  }
+
+  export type WorkoutDateResponse = {
+    activityType: string
+    value: number
+    startDate: string
+    endDate: string
   }
 
   export type NutrientResponse = {

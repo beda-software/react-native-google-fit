@@ -457,4 +457,18 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             errorCallback.invoke(e.getMessage());
         }
     }
+
+    @ReactMethod
+    public void getWorkoutSamples(double startDate,
+                                       double endDate,
+                                       int bucketInterval,
+                                       String bucketUnit,
+                                       Callback errorCallback,
+                                       Callback successCallback) {
+        try {
+            mGoogleFitManager.getWorkoutHistory().aggregateDataByDate((long) startDate, (long) endDate, bucketInterval, bucketUnit, successCallback);
+        } catch (IllegalViewOperationException e) {
+            errorCallback.invoke(e.getMessage());
+        }
+    }
 }
