@@ -25,7 +25,6 @@ import com.facebook.react.bridge.WritableMap;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptionsExtension;
-import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.fitness.FitnessOptions;
 import com.google.android.gms.fitness.data.DataType;
@@ -37,12 +36,9 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.TimeZone;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 
 public class SleepHistory {

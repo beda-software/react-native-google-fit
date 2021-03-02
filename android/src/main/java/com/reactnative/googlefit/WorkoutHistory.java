@@ -32,12 +32,11 @@ public class WorkoutHistory {
         this.mReactContext = reactContext;
     }
 
-    public void aggregateDataByDate(long startTime, long endTime, int bucketInterval, String bucketUnit, final Callback successCallback) {
-        Log.i(TAG, "\tWorkoutHistory:");
-        DateFormat dateFormat = DateFormat.getDateInstance();
-        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
-        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
-
+    public void aggregateDataByDate(long startTime,
+                                    long endTime,
+                                    int bucketInterval,
+                                    String bucketUnit,
+                                    final Callback successCallback) {
         SessionReadRequest readRequest = new SessionReadRequest.Builder()
                 .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
                 .read(DataType.TYPE_WORKOUT_EXERCISE)
@@ -51,12 +50,12 @@ public class WorkoutHistory {
 
         GoogleSignInAccount googleSignInAccount =
                 GoogleSignIn.getAccountForExtension(this.mReactContext, fitnessOptions);
+
         Fitness.getSessionsClient(this.mReactContext, googleSignInAccount)
                 .readSession(readRequest)
                 .addOnSuccessListener(new OnSuccessListener<SessionReadResponse>() {
                     @Override
                     public void onSuccess(SessionReadResponse sessionReadResponse) {
-                        Log.i(TAG, "success callback");
                         List<Session> sessions = sessionReadResponse.getSessions();
                         Log.i(TAG, "Session read was successful. Number of returned sessions is: "
                                 + sessions.size());
@@ -83,7 +82,5 @@ public class WorkoutHistory {
                         Log.i(TAG, "Error" + e);
                     }
                 });
-
-
     }
 }
