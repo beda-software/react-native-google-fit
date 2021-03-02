@@ -1,18 +1,14 @@
 'use strict'
 import { DeviceEventEmitter, NativeModules, PermissionsAndroid } from 'react-native';
-import moment from 'moment';
 
 import PossibleScopes from './src/scopes';
 import {
-  buildDailySteps,
   isNil,
-  KgToLbs,
   lbsAndOzToK,
   prepareDailyResponse,
   prepareResponse,
   prepareHydrationResponse,
   prepareDeleteOptions,
-  getWeekBoundary,
 } from './src/utils';
 
 const googleFit = NativeModules.RNGoogleFit

@@ -446,6 +446,7 @@ declare module 'react-native-google-fit' {
     FITNESS_BODY_TEMPERATURE_READ_WRITE = 'https://www.googleapis.com/auth/fitness.body_temperature.write',
     FITNESS_REPRODUCTIVE_HEALTH_READ = 'https://www.googleapis.com/auth/fitness.reproductive_health.read',
     FITNESS_REPRODUCTIVE_HEALTH_READ_WRITE = 'https://www.googleapis.com/auth/fitness.reproductive_health.write',
+    FITNESS_HEART_RATE_READ = 'https://www.googleapis.com/auth/fitness.heart_rate.read',
   }
 
   const googleFit: GoogleFit
