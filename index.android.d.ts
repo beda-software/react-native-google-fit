@@ -21,19 +21,6 @@ declare module 'react-native-google-fit' {
     startRecording: (callback: (param: any) => void, dataTypes: Array<'step' | 'distance' | 'activity'>) => void
 
     /**
-     * A shortcut to get the total steps of a given day by using getDailyStepCountSamples
-     * @param {Date} date optional param, new Date() will be used if date is not provided
-     */
-    getDailySteps: (date?: Date) => Promise<StepsResponse[]>
-
-    /**
-     * A shortcut to get the weekly steps of a given day by using getDailyStepCountSamples
-     * @param {Date} date optional param, new Date() will be used if date is not provided
-     * @param {number} adjustment, optional param, use to adjust the default start day of week, 0 = Sunday, 1 = Monday, etc.
-     */
-    getWeeklySteps: (date?: Date, adjustment?: number) => Promise<StepsResponse[]>
-
-    /**
      * Get the total steps per day over a specified date range.
      * @param {Object} options getDailyStepCountSamples accepts an options object containing optional startDate: ISO8601Timestamp and endDate: ISO8601Timestamp.
      * @param {Function} callback The function will be called with an array of elements.
@@ -81,6 +68,16 @@ declare module 'react-native-google-fit' {
       callback: (isError: boolean, result: CalorieReponse[]) => void
     ): void
 
+    /**
+     * Get workouts.
+     * @param {Object} options getDailyWorkoutSamples accepts an options object containing required startDate: ISO8601Timestamp and endDate: ISO8601Timestamp.
+     * @callback {Function} callback The function will be called with an array of elements.
+     */
+    getWorkoutSamples(
+      options: Partial<StartAndEndDate>,
+      callback?: (isError: boolean, result: WorkoutDateResponse[]) => void
+    ): Promise<any> | void
+
     getDailyNutritionSamples(
       options: StartAndEndDate & Partial<BucketOptions>,
       callback: (isError: boolean, result: NutrientResponse[]) => void
@@ -97,6 +94,12 @@ declare module 'react-native-google-fit' {
       callback: (isError: boolean, result: WeightSample[]) => void
     ) => void
 
+
+    getLatestWeight: (
+      options: any,
+      callback: (isError: boolean, result: WeightSample) => void
+    ) => void
+
     /**
      * Query for weight samples. the options object is used to setup a query to retrieve relevant samples.
      * @param {Object} options  getHeightSamples accepts an options object containing unit: "pound"/"kg",
@@ -106,6 +109,11 @@ declare module 'react-native-google-fit' {
     getHeightSamples: (
       options: StartAndEndDate,
       callback: (isError: boolean, result: WeightSample[]) => void
+    ) => void
+
+    getLatestHeight: (
+      options: any,
+      callback: (isError: boolean, result: WeightSample) => void
     ) => void
 
     getHeartRateSamples: (
@@ -230,7 +238,6 @@ declare module 'react-native-google-fit' {
     endDate: string,
   };
 
-
   export type NumericalStartAndEndDate = {
     startDate: number,
     endDate: number
@@ -242,9 +249,11 @@ declare module 'react-native-google-fit' {
   };
 
   export type StepsResponse = {
-    source: string,
-    steps: Array<{date: string, value: number }>
+    startDate: string;
+    endDate: string;
+    value: number;
   };
+
 
   export type CalorieReponse = {
     calorie: number,
@@ -290,6 +299,13 @@ declare module 'react-native-google-fit' {
     calories?: number,
     quantity?: number,
     distance?: number
+  }
+
+  export type WorkoutDateResponse = {
+    activityType: string
+    value: number
+    startDate: string
+    endDate: string
   }
 
   export type NutrientResponse = {
@@ -412,6 +428,8 @@ declare module 'react-native-google-fit' {
   export enum Scopes {
     FITNESS_ACTIVITY_READ = 'https://www.googleapis.com/auth/fitness.activity.read',
     FITNESS_ACTIVITY_READ_WRITE = 'https://www.googleapis.com/auth/fitness.activity.write',
+    FITNESS_SLEEP_READ = 'https://www.googleapis.com/auth/fitness.sleep.read',
+    FITNESS_SLEEP_READ_WRITE = 'https://www.googleapis.com/auth/fitness.sleep.write',
     FITNESS_LOCATION_READ = 'https://www.googleapis.com/auth/fitness.location.read',
     FITNESS_LOCATION_READ_WRITE = 'https://www.googleapis.com/auth/fitness.location.write',
     FITNESS_BODY_READ = 'https://www.googleapis.com/auth/fitness.body.read',
@@ -428,6 +446,7 @@ declare module 'react-native-google-fit' {
     FITNESS_BODY_TEMPERATURE_READ_WRITE = 'https://www.googleapis.com/auth/fitness.body_temperature.write',
     FITNESS_REPRODUCTIVE_HEALTH_READ = 'https://www.googleapis.com/auth/fitness.reproductive_health.read',
     FITNESS_REPRODUCTIVE_HEALTH_READ_WRITE = 'https://www.googleapis.com/auth/fitness.reproductive_health.write',
+    FITNESS_HEART_RATE_READ = 'https://www.googleapis.com/auth/fitness.heart_rate.read',
   }
 
   const googleFit: GoogleFit

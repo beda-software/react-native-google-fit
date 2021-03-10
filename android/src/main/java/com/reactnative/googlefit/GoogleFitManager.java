@@ -32,9 +32,7 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.ErrorDialogFragment;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.auth.api.signin.*;
 
@@ -49,53 +47,31 @@ public class GoogleFitManager implements
     private static boolean mAuthInProgress = false;
     private Activity mActivity;
 
-    private DistanceHistory distanceHistory;
     private StepHistory stepHistory;
     private BodyHistory bodyHistory;
     private HeartrateHistory heartrateHistory;
     private CalorieHistory calorieHistory;
-    private NutritionHistory nutritionHistory;
-    private StepCounter mStepCounter;
-    private StepSensor stepSensor;
-    private RecordingApi recordingApi;
-    private ActivityHistory activityHistory;
-    private HydrationHistory hydrationHistory;
     private SleepHistory sleepHistory;
+    private WorkoutHistory workoutHistory;
 
     private static final String TAG = "RNGoogleFit";
 
     public GoogleFitManager(ReactContext reactContext, Activity activity) {
-
-        //Log.i(TAG, "Initializing GoogleFitManager" + mAuthInProgress);
         this.mReactContext = reactContext;
         this.mActivity = activity;
 
         mReactContext.addActivityEventListener(this);
 
-        this.mStepCounter = new StepCounter(mReactContext, this, activity);
         this.stepHistory = new StepHistory(mReactContext, this);
         this.bodyHistory = new BodyHistory(mReactContext, this);
         this.heartrateHistory = new HeartrateHistory(mReactContext, this);
-        this.distanceHistory = new DistanceHistory(mReactContext, this);
         this.calorieHistory = new CalorieHistory(mReactContext, this);
-        this.nutritionHistory = new NutritionHistory(mReactContext, this);
-        this.recordingApi = new RecordingApi(mReactContext, this);
-        this.activityHistory = new ActivityHistory(mReactContext, this);
-        this.hydrationHistory = new HydrationHistory(mReactContext, this);
         this.sleepHistory = new SleepHistory(mReactContext, this);
-        //        this.stepSensor = new StepSensor(mReactContext, activity);
+        this.workoutHistory = new WorkoutHistory(mReactContext, this);
     }
 
     public GoogleApiClient getGoogleApiClient() {
         return mApiClient;
-    }
-
-    public RecordingApi getRecordingApi() {
-        return recordingApi;
-    }
-
-    public StepCounter getStepCounter() {
-        return mStepCounter;
     }
 
     public StepHistory getStepHistory() {
@@ -110,10 +86,6 @@ public class GoogleFitManager implements
         return heartrateHistory;
     }
 
-    public DistanceHistory getDistanceHistory() {
-        return distanceHistory;
-    }
-
     public void resetAuthInProgress()
     {
         if (!isAuthorized()) {
@@ -123,19 +95,16 @@ public class GoogleFitManager implements
 
     public CalorieHistory getCalorieHistory() { return calorieHistory; }
 
-    public NutritionHistory getNutritionHistory() { return nutritionHistory; }
-
-    public HydrationHistory getHydrationHistory() { return hydrationHistory; }
-
     public SleepHistory getSleepHistory() { return sleepHistory; }
+
+    public WorkoutHistory getWorkoutHistory() { return  workoutHistory; }
 
     public void authorize(ArrayList<String> userScopes) {
         final ReactContext mReactContext = this.mReactContext;
 
-        GoogleApiClient.Builder apiClientBuilder = new GoogleApiClient.Builder(mReactContext.getApplicationContext())
-                .addApi(Fitness.SENSORS_API)
-                .addApi(Fitness.HISTORY_API)
-                .addApi(Fitness.RECORDING_API);
+        GoogleApiClient.Builder apiClientBuilder =
+                new GoogleApiClient.Builder(mReactContext.getApplicationContext())
+                        .addApi(Fitness.HISTORY_API);
 
         for (String scopeName : userScopes) {
             apiClientBuilder.addScope(new Scope(scopeName));
@@ -190,7 +159,7 @@ public class GoogleFitManager implements
         mApiClient.connect();
     }
 
-    public void  disconnect(Context context) {
+    public void disconnect(Context context) {
         GoogleSignInOptions options = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
@@ -204,25 +173,8 @@ public class GoogleFitManager implements
     }
 
     public boolean isAuthorized() {
-        if (mApiClient != null && mApiClient.isConnected()) {
-            return true;
-        } else {
-            return false;
-        }
+        return mApiClient != null && mApiClient.isConnected();
     }
-
-    protected void stop() {
-        Fitness.SensorsApi.remove(mApiClient, mStepCounter)
-                .setResultCallback(new ResultCallback<Status>() {
-                    @Override
-                    public void onResult(Status status) {
-                        if (status.isSuccess()) {
-                            mApiClient.disconnect();
-                        }
-                    }
-                });
-    }
-
 
     private void sendEvent(ReactContext reactContext,
                            String eventName,
@@ -231,7 +183,6 @@ public class GoogleFitManager implements
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
     }
-
 
     @Override
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
@@ -255,15 +206,7 @@ public class GoogleFitManager implements
     public void onNewIntent(Intent intent) {
     }
 
-    public ActivityHistory getActivityHistory() {
-        return activityHistory;
-    }
-
-    public void setActivityHistory(ActivityHistory activityHistory) {
-        this.activityHistory = activityHistory;
-    }
-
-    public static class GoogleFitCustomErrorDialig extends ErrorDialogFragment {
+    public static class GoogleFitCustomErrorDialog extends ErrorDialogFragment {
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             // Get the error code and retrieve the appropriate dialog
@@ -281,7 +224,7 @@ public class GoogleFitManager implements
     /* Creates a dialog for an error message */
     private void showErrorDialog(int errorCode) {
         // Create a fragment for the error dialog
-        GoogleFitCustomErrorDialig dialogFragment = new GoogleFitCustomErrorDialig();
+        GoogleFitCustomErrorDialog dialogFragment = new GoogleFitCustomErrorDialog();
         // Pass the error that should be displayed
         Bundle args = new Bundle();
         args.putInt(AUTH_PENDING, errorCode);

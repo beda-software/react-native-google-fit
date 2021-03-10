@@ -1,18 +1,14 @@
 'use strict'
 import { DeviceEventEmitter, NativeModules, PermissionsAndroid } from 'react-native';
-import moment from 'moment';
 
 import PossibleScopes from './src/scopes';
 import {
-  buildDailySteps,
   isNil,
-  KgToLbs,
   lbsAndOzToK,
   prepareDailyResponse,
   prepareResponse,
   prepareHydrationResponse,
   prepareDeleteOptions,
-  getWeekBoundary,
 } from './src/utils';
 
 const googleFit = NativeModules.RNGoogleFit
@@ -138,58 +134,21 @@ class RNGoogleFit {
     })
   }
 
-
-  /**
-   * A shortcut to get the total steps of a given day by using getDailyStepCountSamples
-   * @param {Date} date optional param, new moment() will be used if date is not provided
-   */
-  getDailySteps(date = moment()) {
-    const options = {
-      startDate: moment(date).startOf('day'),
-      endDate: moment(date).endOf('day'),
-    };
-    return this.getDailyStepCountSamples(options);
-  }
-
-  /**
-   * A shortcut to get the weekly steps of a given day by using getDailyStepCountSamples
-   * @param {Date} date optional param, new Date() will be used if date is not provided
-   * @param {number} adjustment, use to adjust the default start day of week, 0 = Sunday, 1 = Monday, etc.
-   */
-  getWeeklySteps(date=new Date(), adjustment=0) {
-    const [startDate, endDate] = getWeekBoundary(date, adjustment);
-    const options = {
-      startDate: startDate,
-      endDate: endDate,
-    }
-    return this.getDailyStepCountSamples(options);
-  }
-
   isConfigsEmpty(obj) {
     for(var prop in obj) return false;
     return true;
   }
 
-  _retrieveDailyStepCountSamples = (startDate, endDate, options, callback) => {
+  _retrieveDailyStepCountSamples = (startDate, endDate, bucketInterval, bucketUnit, callback) => {
     googleFit.getDailyStepCountSamples(
       startDate,
       endDate,
-      options.configs,
+      bucketInterval,
+      bucketUnit,
       msg => callback(msg, false),
       res => {
         if (res.length > 0) {
-          callback(
-            false,
-            res.map(function(dev) {
-              const obj = {}
-              obj.source =
-                dev.source.appPackage +
-                (dev.source.stream ? ':' + dev.source.stream : '')
-              obj.steps = buildDailySteps(dev.steps)
-              obj.rawSteps = this.isConfigsEmpty(options.configs) ? [] : dev.steps
-              return obj
-            }, this)
-          )
+          callback(false, prepareResponse(res, 'value'), this)
         } else {
           callback('There is no any steps data for this period', false)
         }
@@ -210,12 +169,17 @@ class RNGoogleFit {
     const endDate = !isNil(options.endDate)
       ? Date.parse(options.endDate)
       : new Date().valueOf()
+
+    const bucketInterval = options.bucketInterval || 1;
+    const bucketUnit = options.bucketUnit || "DAY";
+
     if (!callback || typeof callback !== 'function') {
       return new Promise((resolve, reject) => {
         this._retrieveDailyStepCountSamples(
           startDate,
           endDate,
-          options,
+          bucketInterval,
+          bucketUnit,
           (error, result) => {
             if (!error) {
               resolve(result)
@@ -226,7 +190,7 @@ class RNGoogleFit {
         )
       })
     }
-    this._retrieveDailyStepCountSamples(startDate, endDate, options, callback)
+    this._retrieveDailyStepCountSamples(startDate, endDate, bucketInterval, bucketUnit, options, callback)
   }
 
   /**
@@ -331,6 +295,34 @@ class RNGoogleFit {
     )
   }
 
+  getWorkoutSamples(options, callback) {
+    const startDate = !isNil(options.startDate)
+      ? Date.parse(options.startDate)
+      : new Date().setHours(0, 0, 0, 0)
+    const endDate = !isNil(options.endDate)
+      ? Date.parse(options.endDate)
+      : new Date().valueOf();
+    const bucketInterval = options.bucketInterval || 1;
+    const bucketUnit = options.bucketUnit || "DAY";
+
+    googleFit.getWorkoutSamples(
+      startDate,
+      endDate,
+      bucketInterval,
+      bucketUnit,
+      msg => {
+        callback(msg, false)
+      },
+      res => {
+        if (res.length > 0) {
+          callback(false, prepareResponse(res))
+        } else {
+          callback('There is no any workout data for this period', false)
+        }
+      }
+    )
+  }
+
   getDailyNutritionSamples(options, callback) {
     const startDate = Date.parse(options.startDate)
     const endDate = Date.parse(options.endDate)
@@ -389,17 +381,22 @@ class RNGoogleFit {
       },
       res => {
         if (res.length > 0) {
-          res = res.map(el => {
-            if (el.value) {
-              if (options.unit === 'pound') {
-                el.value = KgToLbs(el.value) //convert back to pounds
-              }
-              el.startDate = new Date(el.startDate).toISOString()
-              el.endDate = new Date(el.endDate).toISOString()
-              return el
-            }
-          })
-          callback(false, res.filter(day => !isNil(day)))
+          callback(false, prepareResponse(res, 'value'))
+        } else {
+          callback('There is no any weight data for this period', false)
+        }
+      }
+    )
+  }
+
+   getLatestWeight = (options, callback) => {
+    googleFit.getLatestWeight(
+      msg => {
+        callback(msg, false)
+      },
+      res => {
+        if (res) {
+          callback(false, prepareResponse([res], 'value')[0])
         } else {
           callback('There is no any weight data for this period', false)
         }
@@ -419,6 +416,21 @@ class RNGoogleFit {
       res => {
         if (res.length > 0) {
           callback(false, prepareResponse(res, 'value'))
+        } else {
+          callback('There is no any height data for this period', false)
+        }
+      }
+    )
+  }
+
+  getLatestHeight(options, callback) {
+    googleFit.getLatestHeight(
+      msg => {
+        callback(msg, false)
+      },
+      res => {
+        if (res) {
+          callback(false, prepareResponse([res], 'value')[0])
         } else {
           callback('There is no any height data for this period', false)
         }
@@ -654,7 +666,7 @@ class RNGoogleFit {
       msg => callback(true, msg),
       res => {
         if (res.length > 0) {
-          callback(false, prepareResponse(res, 'value'))
+          callback(false, prepareResponse(res, 'startDate'))
         } else {
           callback('There is no sleep data for this period.', false)
         }
